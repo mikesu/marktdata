@@ -1,0 +1,28 @@
+{
+  "name": "Market Data",
+  "author": "Mike SU",
+  "version": "1.0.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Market Data",
+    "uuid": "62ac0ed0-14ee-4de8-946d-1be695c6c8a2",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "messageKeys": [
+      "JSReady"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
