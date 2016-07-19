@@ -1,22 +1,4 @@
 
-//列表数据项
-typedef struct {
-	//编号
-	char* code;
-  //名字
-  char*  name;
-  //当前价格或点数
-  char* value;
-	//涨跌价格或点数
-	char* point;
-	//涨跌率(%)
-	char* rate;
-	//成交量
-	char* volume;
-	//成交额
-	char* turnover;
-} Item;
-
 typedef void (*ListWindowSelectClick)(char* code);
 typedef void (*ListWindowHandler)(void);
 
