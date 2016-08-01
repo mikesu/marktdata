@@ -5,8 +5,7 @@
 #define MENU_CELL_HEIGHT 44
 
 static ListWindowCallbacks s_callbacks;
-static Item *s_items;
-static uint16_t s_items_len = 0;
+static DataList s_data_list;
 
 // BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
@@ -36,7 +35,7 @@ static void destroy_ui(void) {
 
 //多少行
 static uint16_t menu_get_num_rows(MenuLayer *menu_layer, uint16_t section_index, void *data) {
-  return s_items_len;
+  return s_data_list.size;
 }
 //分割线的高度
 static int16_t menu_get_separator_height(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
@@ -65,19 +64,19 @@ static void menu_draw_row(GContext* ctx, const Layer *cell_layer, MenuIndex *cel
 
 	//graphics_context_set_text_color(ctx, GColorBlue); 
   GRect name_bounds = { .origin = { cell_bounds.origin.x, cell_bounds.origin.y }, .size = { cell_bounds.size.w/2, cell_bounds.size.h/2 } };
-  graphics_draw_text(ctx, s_items[cell_index->row].name, font, name_bounds, GTextOverflowModeWordWrap,GTextAlignmentCenter, NULL);
+  graphics_draw_text(ctx, s_data_list.data_items[cell_index->row]->name, font, name_bounds, GTextOverflowModeWordWrap,GTextAlignmentCenter, NULL);
           
   //graphics_context_set_text_color(ctx, GColorRed);
   GRect value_bounds = { .origin = { cell_bounds.origin.x+cell_bounds.size.w/2, cell_bounds.origin.y }, .size = { cell_bounds.size.w/2, cell_bounds.size.h/2 } };
-  graphics_draw_text(ctx, s_items[cell_index->row].value, font, value_bounds, GTextOverflowModeWordWrap,GTextAlignmentCenter, NULL);
+  graphics_draw_text(ctx, s_data_list.data_items[cell_index->row]->value, font, value_bounds, GTextOverflowModeWordWrap,GTextAlignmentCenter, NULL);
 	
 	//graphics_context_set_text_color(ctx, GColorRed); 
   GRect rate_bounds = { .origin = { cell_bounds.origin.x, cell_bounds.origin.y+cell_bounds.size.h/2 }, .size = { cell_bounds.size.w/2, cell_bounds.size.h/2 } };
-  graphics_draw_text(ctx, s_items[cell_index->row].rate, font, rate_bounds, GTextOverflowModeWordWrap,GTextAlignmentCenter, NULL);
+  graphics_draw_text(ctx, s_data_list.data_items[cell_index->row]->rate, font, rate_bounds, GTextOverflowModeWordWrap,GTextAlignmentCenter, NULL);
           
   //graphics_context_set_text_color(ctx, GColorRed);
   GRect point_bounds = { .origin = { cell_bounds.origin.x+cell_bounds.size.w/2, cell_bounds.origin.y+cell_bounds.size.h/2 }, .size = { cell_bounds.size.w/2, cell_bounds.size.h/2 } };
-  graphics_draw_text(ctx, s_items[cell_index->row].point, font, point_bounds, GTextOverflowModeWordWrap,GTextAlignmentCenter, NULL);
+  graphics_draw_text(ctx, s_data_list.data_items[cell_index->row]->point, font, point_bounds, GTextOverflowModeWordWrap,GTextAlignmentCenter, NULL);
 
 
 }
@@ -85,7 +84,7 @@ static void menu_draw_row(GContext* ctx, const Layer *cell_layer, MenuIndex *cel
 static void menu_select_click(MenuLayer *menu_layer, MenuIndex *cell_index, void *data){
 	APP_LOG(APP_LOG_LEVEL_DEBUG,"menu_select_click");
 	if(s_callbacks.select_click!=NULL){
-		s_callbacks.select_click(s_items[cell_index->row].code);
+		s_callbacks.select_click(s_data_list.data_items[cell_index->row]->code);
 	}
 }
 //长按选择回调
@@ -112,18 +111,17 @@ static void handle_window_unload(Window* window) {
   destroy_ui();
 }
 
-void set_list_window_callbacks(ListWindowCallbacks callbacks){
+void list_window_set_callbacks(ListWindowCallbacks callbacks){
 	s_callbacks = callbacks;
 }
 
-void reload_list_window(Item *items,uint16_t items_len){
-	s_items = items;
-	s_items_len = items_len;
+void list_window_reload(DataList data_list){
+	s_data_list = data_list;
+
 }
 
-void show_list_window(Item *items,uint16_t items_len) {
-	s_items = items;
-	s_items_len = items_len;
+void list_window_show(DataList data_list) {
+	s_data_list = data_list;
   initialise_ui();
   window_set_window_handlers(s_window, (WindowHandlers) {
 		.load = handle_window_load,
@@ -132,6 +130,6 @@ void show_list_window(Item *items,uint16_t items_len) {
   window_stack_push(s_window, true);
 }
 
-void hide_list_window(void) {
+void list_window_hide(void) {
   window_stack_remove(s_window, true);
 }

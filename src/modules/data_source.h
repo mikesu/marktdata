@@ -1,9 +1,5 @@
 #pragma once
 
-typedef void (*HttpReceiveStringCallback)(char* str,uint32_t length);
-
-typedef void (*HttpReceiveRawCallback)(uint8_t* data,uint32_t length);
-
 //列表数据项
 typedef struct {
 	char* code; 	//编号
@@ -13,15 +9,37 @@ typedef struct {
 	char* rate;		//涨跌率(%)
 	char* volume;	//成交量
 	char* turnover;	//成交额
-} Item;
+} DataItem;
+//
+typedef struct {
+	DataItem**	data_items;
+	int	 		size;
+} DataList;
 
 typedef struct {
-	HttpReceiveStringCallback receive_string;
-	HttpReceiveRawCallback receive_raw;
-} HttpCallbacks;
+	DataItem*	data_item;
+	uint8_t*	img_data;
+	int			img_size;			
+} DataDetail;
 
-void http_get_string(char* url);
 
-void http_get_raw(char* url);
+typedef void (*GetListCallback)(DataList data_list);
 
-void http_init(HttpCallbacks callbacks);
+typedef void (*GetDetailCallback)(DataDetail data_detail);
+
+typedef struct {
+	GetListCallback receive_list;
+	GetDetailCallback receive_detail;
+} DataSourceCallbacks;
+
+void data_source_init(DataSourceCallbacks callbacks);
+
+void data_source_deinit();
+
+void data_source_get_list(char **codes,int length);
+
+void data_source_get_detail(char *code);
+
+void data_source_free_list(DataList data_list);
+
+void data_source_free_detail(DataDetail data_detail);

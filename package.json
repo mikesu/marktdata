@@ -2,7 +2,9 @@
   "name": "Market Data",
   "author": "Mike SU",
   "version": "1.0.0",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
   "private": true,
   "dependencies": {},
   "pebble": {
@@ -19,7 +21,20 @@
       "watchface": false
     },
     "messageKeys": [
-      "JSReady"
+      "action",
+      "data",
+      "list_size",
+      "item_code",
+      "item_name",
+      "item_value",
+      "item_point",
+      "item_rate",
+      "item_volume",
+      "item_turnover",
+      "img_size",
+      "img_chunk",
+      "img_chunk_size",
+      "img_chunk_index"
     ],
     "resources": {
       "media": []

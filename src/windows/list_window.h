@@ -1,4 +1,6 @@
 
+#pragma once
+#include "../modules/data_source.h"
 typedef void (*ListWindowSelectClick)(char* code);
 typedef void (*ListWindowHandler)(void);
 
@@ -8,7 +10,7 @@ typedef struct {
 	ListWindowHandler tap_handler;
 } ListWindowCallbacks;
 
-void set_list_window_callbacks(ListWindowCallbacks callbacks);
-void reload_list_window(Item *items,uint16_t items_len);
-void show_list_window(Item *items,uint16_t items_len);
-void hide_list_window(void);
+void list_window_set_callbacks(ListWindowCallbacks callbacks);
+void list_window_show(DataList data_list);
+void list_window_reload(DataList data_list);
+void list_window_hide(void);
