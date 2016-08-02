@@ -2,12 +2,8 @@
 #include "data_source.h"
 
 static DataSourceCallbacks s_callbacks;
-static DataList s_data_list;
-static int s_data_list_index = 0;
-static bool s_data_list_completed = true;
-static DataDetail s_data_detail;
-static int s_data_detail_img_index = 0;
-static bool s_data_detail_completed = true;
+static DataList* s_data_list = NULL;
+static DataDetail* s_data_detail = NULL;
 
 static char* s_data;
 
@@ -17,6 +13,8 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 static void received_list(DictionaryIterator *iter);
 static void received_detail(DictionaryIterator *iter);
 static DataItem* received_item(DictionaryIterator *iter);
+static void data_source_free_list(DataList* data_list);
+static void data_source_free_detail(DataDetail* data_detail);
 static void free_item(DataItem* dataItem);
 static void send_data(char* action,char* data);
 static char *translate_error(AppMessageResult result);
@@ -31,6 +29,7 @@ void data_source_init(DataSourceCallbacks callbacks){
   	app_message_register_inbox_received(inbox_received_handler);
   	app_message_register_outbox_sent(outbox_sent_callback);
   	app_message_register_outbox_failed(outbox_failed_callback);
+  	send_data("init","c ready");
 }
 
 void data_source_deinit(){
@@ -64,21 +63,30 @@ void data_source_get_detail(char *code){
 	}
 }
 
-void data_source_free_list(DataList data_list){
-	if(data_list.data_items){
-		for (int i=0; i < data_list.size; ++i){
-			DataItem* data_item = *(data_list.data_items+i);
+static void data_source_free_list(DataList* data_list){
+	APP_LOG(APP_LOG_LEVEL_DEBUG,"data_source_free_list");
+	if(data_list){
+		for (int i=0; i < data_list->size; ++i){
+			DataItem* data_item = data_list->data_items[i];
 			free_item(data_item);
+			data_item = NULL;
 		}
-		free(data_list.data_items);
+		free(data_list->data_items);
+		data_list->data_items = NULL;
+		free(data_list);
 	}
 
 }
 
-void data_source_free_detail(DataDetail data_detail){
-	free_item(data_detail.data_item);
-	if(data_detail.img_data){
-		free(data_detail.img_data);
+static void data_source_free_detail(DataDetail* data_detail){
+	APP_LOG(APP_LOG_LEVEL_DEBUG,"data_source_free_detail");
+	if(data_detail){
+		free_item(data_detail->data_item);
+		data_detail->data_item = NULL;
+		if(data_detail->img_data){
+			free(data_detail->img_data);
+			data_detail->img_data = NULL;
+		}
 	}
 }
 
@@ -94,6 +102,10 @@ static void send_data(char* action,char* data){
 
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
+	Tuple *init_t = dict_find(iter, MESSAGE_KEY_init);
+	if(init_t){
+		s_callbacks.ready();
+	}
 	received_list(iter);
 	received_detail(iter);
 }
@@ -101,6 +113,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 	char* action = dict_find_str(iterator,MESSAGE_KEY_action);
 	APP_LOG(APP_LOG_LEVEL_DEBUG, "SENT: %s, %s", action,s_data);
+	free(action);
 	free(s_data);
 	s_data = NULL;
 }
@@ -109,50 +122,63 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 	char* action = dict_find_str(iterator,MESSAGE_KEY_action);
 	APP_LOG(APP_LOG_LEVEL_DEBUG, "ERROR: %s, %s", action,s_data);
 	APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", translate_error(reason));
+	free(action);
 	free(s_data);
 	s_data = NULL;
 }
 
 static void received_list(DictionaryIterator *iter){
+	static int data_list_index = 0;
+	static bool data_list_completed = true;
+	static DataList* data_list = NULL;
+
 	Tuple *list_size_t = dict_find(iter, MESSAGE_KEY_list_size);
   	if(list_size_t) {
-  		if(s_data_list_completed){
-  			s_data_list_completed = false;
+  		if(data_list_completed){
+  			data_list_completed = false;
   		}else{
-  			data_source_free_list(s_data_list);
+  			data_source_free_list(data_list);
   		}
-  		s_data_list_index = 0;
-  		s_data_list.size = list_size_t->value->int32;
+  		data_list_index = 0;
   		//分配内存
-  		s_data_list.data_items = (DataItem**)malloc(s_data_list.size * sizeof(DataItem*));
+  		data_list = (DataList*)malloc(sizeof(DataList));
+  		data_list->size = list_size_t->value->int32;
+  		data_list->data_items = (DataItem**)malloc(data_list->size * sizeof(DataItem*));
   	}
-  	if(!s_data_list_completed){
+  	if(!data_list_completed){
 		DataItem* data_item = received_item(iter);
 		if(data_item) {
-			s_data_list.data_items[s_data_list_index] = data_item;
-			s_data_list_index ++;
+			data_list->data_items[data_list_index] = data_item;
+			data_list_index ++;
 		}
-		if(s_data_list_index==s_data_list.size) {
-			s_data_list_completed = true;
-			s_callbacks.receive_list(s_data_list);
+		if(data_list_index==data_list->size) {
+			data_list_completed = true;
+			s_callbacks.receive_list(data_list);
+			data_source_free_list(s_data_list);
+			s_data_list = data_list;
 		}
   	}
 
 }
 
 static void received_detail(DictionaryIterator *iter){
+	static DataDetail* data_detail = NULL;
+	static int data_detail_img_index = 0;
+	static bool data_detail_completed = true;
+
 	Tuple *img_size_t = dict_find(iter, MESSAGE_KEY_img_size);
   	if(img_size_t) {
-  		if(s_data_detail_completed){
-  			s_data_detail_completed = false;
+  		if(data_detail_completed){
+  			data_detail_completed = false;
   		}else{
-  			data_source_free_detail(s_data_detail);
+  			data_source_free_detail(data_detail);
   		}
-  		s_data_detail_img_index = 0;
-		s_data_detail.img_size = img_size_t->value->int32;
-    	s_data_detail.img_data = (uint8_t*)malloc(s_data_detail.img_size * sizeof(uint8_t));
+  		data_detail_img_index = 0;
+  		data_detail = (DataDetail*)malloc(sizeof(DataDetail));
+		data_detail->img_size = img_size_t->value->int32;
+    	data_detail->img_data = (uint8_t*)malloc(data_detail->img_size * sizeof(uint8_t));
   	}
-  	if(!s_data_detail_completed){
+  	if(data_detail&&!data_detail_completed){
   		// An image chunk
 		Tuple *chunk_t = dict_find(iter, MESSAGE_KEY_img_chunk);
 		if(chunk_t) {
@@ -161,23 +187,25 @@ static void received_detail(DictionaryIterator *iter){
 		    Tuple *chunk_size_t = dict_find(iter, MESSAGE_KEY_img_chunk_size);
 		    int chunk_size = chunk_size_t->value->int32;
 
-		    s_data_detail_img_index = s_data_detail_img_index + chunk_size;
+		    data_detail_img_index = data_detail_img_index + chunk_size;
 
 		    Tuple *index_t = dict_find(iter, MESSAGE_KEY_img_chunk_index);
 		    int index = index_t->value->int32;
 
 		    // Save the chunk
-		    memcpy(&s_data_detail.img_data[index], chunk_data, chunk_size);
+		    memcpy(&data_detail->img_data[index], chunk_data, chunk_size);
 		}
 
 		DataItem* data_item = received_item(iter);
 		if(data_item){
-			s_data_detail.data_item = data_item;
+			data_detail->data_item = data_item;
 		}
 
-		if(s_data_detail.data_item&&(s_data_detail_img_index == s_data_detail.img_size)){
-			s_data_detail_completed = true;
-			s_callbacks.receive_detail(s_data_detail);
+		if(data_detail->data_item&&(data_detail_img_index == data_detail->img_size)){
+			data_detail_completed = true;
+			s_callbacks.receive_detail(data_detail);
+			data_source_free_detail(s_data_detail);
+			s_data_detail = data_detail;
 		}
   	}
 }
@@ -185,21 +213,31 @@ static void received_detail(DictionaryIterator *iter){
 static char* dict_find_str(DictionaryIterator *iter,const uint32_t key){
 	Tuple *str_t = dict_find(iter,key);
 	if(str_t){
-		return str_t->value->cstring;
+		char* result = malloc(strlen(str_t->value->cstring)+1);
+		strcpy(result, str_t->value->cstring);
+		return result;
 	}else{
 		return NULL;
 	}
 }
 
 static void free_item(DataItem* data_item){
+	APP_LOG(APP_LOG_LEVEL_DEBUG,"free_item");
 	if(data_item){
 		free(data_item->code);
+		data_item->code = NULL;
 		free(data_item->name);
+		data_item->name = NULL;
 		free(data_item->value);
+		data_item->value = NULL;
 		free(data_item->point);
+		data_item->point = NULL;
 		free(data_item->rate);
+		data_item->rate = NULL;
 		free(data_item->volume);
+		data_item->volume = NULL;
 		free(data_item->turnover);
+		data_item->turnover = NULL;
 		free(data_item);
 	}
 }

@@ -2,6 +2,13 @@
 Pebble.addEventListener('ready', 
   function(e) {
     console.log('PebbleKit JS ready!');
+    Pebble.sendAppMessage({"init":"js reday"}, 
+      function(e) {
+        console.log('sent js reday');
+      },function(e) {
+        console.log('Failed to send data length to Pebble!');
+      }
+    );
   }
 );
 
@@ -15,9 +22,17 @@ Pebble.addEventListener('appmessage',
       if("get_list" == action){
         var codes = dict['data'];
         queryList(codes);
-      }eles if("get_detail" = action){
+      }else if("get_detail" == action){
         var code = dict['data'];
         queryDetail(code);
+      }else if("init" == action){
+        Pebble.sendAppMessage({"init":"js reday"}, 
+          function(e) {
+            console.log('sent c reday');
+          },function(e) {
+            console.log('Failed to send data length to Pebble!');
+          }
+        );
       }
     }
   }                     
@@ -72,7 +87,7 @@ function sendDetail(item,image,index){
     chunkSize = MAX_CHUNK_SIZE;
   }
 
-  dict.img_chunk = array.slice(index, index + chunkSize);
+  dict.img_chunk = image.slice(index, index + chunkSize);
   dict.img_chunk_size = chunkSize;
   dict.img_chunk_index = index;
 
@@ -92,7 +107,15 @@ function sendDetail(item,image,index){
 
 
 function queryItems(codes){
-  var queryUrl = "http://hq.sinajs.cn/list=s_"+codes;
+  var codesArray = codes.split(",");
+  var codesForQuery = "";
+  for (var i = 0; i < codesArray.length; i++) {
+    codesForQuery = codesForQuery + ",s_" +codesArray[i];
+  }
+  if(codesForQuery.length>0){
+    codesForQuery = codesForQuery.slice(1);
+  }
+  var queryUrl = "http://hq.sinajs.cn/list="+codesForQuery;
   var request = new XMLHttpRequest();
   request.open("GET", queryUrl,false);
   request.send();
@@ -101,17 +124,19 @@ function queryItems(codes){
     var lines = request.response.split("\n");
     for(var i = 0; i < lines.length; i++) {
       var line = lines[i];
-      var itemStr = line.substr(line.indexof("\"")+1,line.lastIndexOf("\""));
-      var itemProperties = itemStr.split(",");
-      var item = {};
-      item.code = itemProperties[0];
-      item.name = itemProperties[0];
-      item.value = itemProperties[1];
-      item.point = itemProperties[2];
-      item.rate = itemProperties[3];
-      item.volume = itemProperties[4];
-      item.turnover = itemProperties[5];
-      items.push(item);
+      if(line.length>3){
+        var itemStr = line.slice(line.indexOf("\"")+1,line.lastIndexOf("\""));
+        var itemProperties = itemStr.split(",");
+        var item = {};
+        item.item_code = codesArray[i];
+        item.item_name = itemProperties[0];
+        item.item_value = itemProperties[1];
+        item.item_point = itemProperties[2];
+        item.item_rate = itemProperties[3]+"%";
+        item.item_volume = itemProperties[4];
+        item.item_turnover = itemProperties[5];
+        items.push(item);
+      }
     }
     return items;
   }else{

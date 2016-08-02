@@ -23,13 +23,16 @@ typedef struct {
 } DataDetail;
 
 
-typedef void (*GetListCallback)(DataList data_list);
+typedef void (*GetListCallback)(DataList* data_list);
 
-typedef void (*GetDetailCallback)(DataDetail data_detail);
+typedef void (*GetDetailCallback)(DataDetail* data_detail);
+
+typedef void (*DataSourceInitCallback)(void);
 
 typedef struct {
 	GetListCallback receive_list;
 	GetDetailCallback receive_detail;
+	DataSourceInitCallback ready;
 } DataSourceCallbacks;
 
 void data_source_init(DataSourceCallbacks callbacks);
@@ -39,7 +42,3 @@ void data_source_deinit();
 void data_source_get_list(char **codes,int length);
 
 void data_source_get_detail(char *code);
-
-void data_source_free_list(DataList data_list);
-
-void data_source_free_detail(DataDetail data_detail);

@@ -11,6 +11,5 @@ typedef struct {
 } ListWindowCallbacks;
 
 void list_window_set_callbacks(ListWindowCallbacks callbacks);
-void list_window_show(DataList data_list);
-void list_window_reload(DataList data_list);
+void list_window_show(DataList* data_list);
 void list_window_hide(void);

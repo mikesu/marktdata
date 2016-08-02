@@ -21,6 +21,7 @@
       "watchface": false
     },
     "messageKeys": [
+      "init",
       "action",
       "data",
       "list_size",
