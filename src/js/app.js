@@ -46,17 +46,19 @@ function queryList(codes){
 }
 
 function sendItem(items,index){
+  console.log('Send items with index ' + index);
   var item = items[index];
   if(index == 0){
     item.list_size = items.length;
   }
   Pebble.sendAppMessage(item, 
     function(e) {
+      console.log('Success to sent items with index!' + index);
       if(index+1<items.length){
         sendItems(items,index+1);
       }
     },function(e) {
-      console.log('Failed to send data length to Pebble!');
+      console.log('Failed to send items with index!' + index);
     }
   );
 }
@@ -68,6 +70,7 @@ function queryDetail(code){
 }
 
 function sendDetail(item,image,index){
+  console.log('Send detail');
   var imageSize = image.length;
   var dict;
   if(index==0){
@@ -93,15 +96,15 @@ function sendDetail(item,image,index){
 
   // Send the chunk
   Pebble.sendAppMessage(dict, function() {
+    console.log('Success to Sent chunk with index:' + index + ' chunkSize:'+chunkSize);
     // Success
     index += chunkSize;
-
     if(index < imageSize) {
       // Send the next chunk
       sendDetail(item,image, index);
     }
   }, function(e) {
-    console.log('Failed to send chunk with index ' + index);
+    console.log('Failed to send chunk with index:' + index);
   });
 }
 

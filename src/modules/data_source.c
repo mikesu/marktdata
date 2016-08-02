@@ -87,6 +87,7 @@ static void data_source_free_detail(DataDetail* data_detail){
 			free(data_detail->img_data);
 			data_detail->img_data = NULL;
 		}
+		free(data_detail);
 	}
 }
 
