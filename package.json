@@ -1,44 +1,46 @@
 {
-  "name": "Market Data",
-  "author": "Mike SU",
-  "version": "1.0.0",
-  "keywords": [
-    "pebble-app"
-  ],
-  "private": true,
-  "dependencies": {},
-  "pebble": {
-    "displayName": "Market Data",
-    "uuid": "62ac0ed0-14ee-4de8-946d-1be695c6c8a2",
-    "sdkVersion": "3",
-    "enableMultiJS": true,
-    "targetPlatforms": [
-      "aplite",
-      "basalt",
-      "chalk"
+    "author": "Mike SU",
+    "dependencies": {},
+    "keywords": [
+        "pebble-app"
     ],
-    "watchapp": {
-      "watchface": false
+    "name": "market-data",
+    "pebble": {
+        "capabilities": [
+            ""
+        ],
+        "displayName": "Market Data",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "init",
+            "action",
+            "data",
+            "list_size",
+            "item_code",
+            "item_name",
+            "item_value",
+            "item_point",
+            "item_rate",
+            "item_volume",
+            "item_turnover",
+            "img_size",
+            "img_chunk",
+            "img_chunk_size",
+            "img_chunk_index"
+        ],
+        "projectType": "native",
+        "resources": {
+            "media": []
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt"
+        ],
+        "uuid": "62ac0ed0-14ee-4de8-946d-1be695c6c8a2",
+        "watchapp": {
+            "watchface": false
+        }
     },
-    "messageKeys": [
-      "init",
-      "action",
-      "data",
-      "list_size",
-      "item_code",
-      "item_name",
-      "item_value",
-      "item_point",
-      "item_rate",
-      "item_volume",
-      "item_turnover",
-      "img_size",
-      "img_chunk",
-      "img_chunk_size",
-      "img_chunk_index"
-    ],
-    "resources": {
-      "media": []
-    }
-  }
+    "version": "1.0.0"
 }

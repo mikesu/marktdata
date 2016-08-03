@@ -3,8 +3,8 @@
 //列表数据项
 typedef struct {
 	char* code; 	//编号
-  	char* name;		//名字
-  	char* value;	//当前价格或点数
+  char* name;		//名字
+  char* value;	//当前价格或点数
 	char* point;	//涨跌价格或点数
 	char* rate;		//涨跌率(%)
 	char* volume;	//成交量
@@ -13,13 +13,13 @@ typedef struct {
 //
 typedef struct {
 	DataItem**	data_items;
-	int	 		size;
+	uint16_t	 	size;
 } DataList;
 
 typedef struct {
 	DataItem*	data_item;
 	uint8_t*	img_data;
-	int			img_size;			
+	uint32_t	img_size;			
 } DataDetail;
 
 
@@ -39,6 +39,6 @@ void data_source_init(DataSourceCallbacks callbacks);
 
 void data_source_deinit();
 
-void data_source_get_list(char **codes,int length);
+void data_source_get_list(char **codes,uint16_t length);
 
 void data_source_get_detail(char *code);

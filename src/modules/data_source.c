@@ -24,7 +24,7 @@ static char* dict_find_str(DictionaryIterator *iter,const uint32_t key);
 void data_source_init(DataSourceCallbacks callbacks){
 	s_callbacks = callbacks;
   	const int inbox_size = app_message_inbox_size_maximum();
-  	const int outbox_size = 64;
+  	const int outbox_size = 100;
   	app_message_open(inbox_size, outbox_size);
   	app_message_register_inbox_received(inbox_received_handler);
   	app_message_register_outbox_sent(outbox_sent_callback);
@@ -37,15 +37,15 @@ void data_source_deinit(){
 	data_source_free_detail(s_data_detail);
 }
 
-void data_source_get_list(char **codes,int length){
+void data_source_get_list(char **codes,uint16_t length){
 	if(s_data==NULL){
-		int total = 0;
-		for (int i = 0; i < length; ++i){
+		uint16_t total = 0;
+		for (uint16_t i = 0; i < length; ++i){
 			total = total + strlen(codes[i]) + 1;
 		}
 		s_data = malloc(total);
 		memset(s_data,0,total);
-		for (int i = 0; i < length; ++i){
+		for (uint16_t i = 0; i < length; ++i){
 			strcat(s_data, codes[i]);
 			if(i!=length-1){
 				strcat(s_data,",");
@@ -66,7 +66,7 @@ void data_source_get_detail(char *code){
 static void data_source_free_list(DataList* data_list){
 	APP_LOG(APP_LOG_LEVEL_DEBUG,"data_source_free_list");
 	if(data_list){
-		for (int i=0; i < data_list->size; ++i){
+		for (uint16_t i=0; i < data_list->size; ++i){
 			DataItem* data_item = data_list->data_items[i];
 			free_item(data_item);
 			data_item = NULL;
@@ -129,24 +129,24 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 }
 
 static void received_list(DictionaryIterator *iter){
-	static int data_list_index = 0;
+	static uint16_t data_list_index = 0;
 	static bool data_list_completed = true;
 	static DataList* data_list = NULL;
 
 	Tuple *list_size_t = dict_find(iter, MESSAGE_KEY_list_size);
-  	if(list_size_t) {
-  		if(data_list_completed){
-  			data_list_completed = false;
-  		}else{
-  			data_source_free_list(data_list);
-  		}
-  		data_list_index = 0;
-  		//分配内存
-  		data_list = (DataList*)malloc(sizeof(DataList));
-  		data_list->size = list_size_t->value->int32;
-  		data_list->data_items = (DataItem**)malloc(data_list->size * sizeof(DataItem*));
-  	}
-  	if(!data_list_completed){
+	if(list_size_t) {
+		if(data_list_completed){
+			data_list_completed = false;
+		}else{
+			data_source_free_list(data_list);
+		}
+		data_list_index = 0;
+		//分配内存
+		data_list = (DataList*)malloc(sizeof(DataList));
+		data_list->size = list_size_t->value->uint16;
+		data_list->data_items = (DataItem**)malloc(data_list->size * sizeof(DataItem*));
+	}
+	if(!data_list_completed){
 		DataItem* data_item = received_item(iter);
 		if(data_item) {
 			data_list->data_items[data_list_index] = data_item;
@@ -158,43 +158,43 @@ static void received_list(DictionaryIterator *iter){
 			data_source_free_list(s_data_list);
 			s_data_list = data_list;
 		}
-  	}
-
+	}
 }
 
 static void received_detail(DictionaryIterator *iter){
 	static DataDetail* data_detail = NULL;
-	static int data_detail_img_index = 0;
+	static uint32_t data_detail_img_index = 0;
 	static bool data_detail_completed = true;
 
 	Tuple *img_size_t = dict_find(iter, MESSAGE_KEY_img_size);
-  	if(img_size_t) {
-  		if(data_detail_completed){
-  			data_detail_completed = false;
-  		}else{
-  			data_source_free_detail(data_detail);
-  		}
-  		data_detail_img_index = 0;
-  		data_detail = (DataDetail*)malloc(sizeof(DataDetail));
-		data_detail->img_size = img_size_t->value->int32;
-    	data_detail->img_data = (uint8_t*)malloc(data_detail->img_size * sizeof(uint8_t));
-  	}
-  	if(data_detail&&!data_detail_completed){
-  		// An image chunk
+  if(img_size_t) {
+		if(data_detail_completed){
+			data_detail_completed = false;
+		}else{
+			data_source_free_detail(data_detail);
+		}
+		data_detail_img_index = 0;
+		data_detail = (DataDetail*)malloc(sizeof(DataDetail));
+		data_detail->img_size = img_size_t->value->uint32;
+    data_detail->img_data = (uint8_t*)malloc(data_detail->img_size * sizeof(uint8_t));
+  }
+	if(!data_detail_completed){
+		// An image chunk
 		Tuple *chunk_t = dict_find(iter, MESSAGE_KEY_img_chunk);
 		if(chunk_t) {
 			uint8_t *chunk_data = chunk_t->value->data;
 
-		    Tuple *chunk_size_t = dict_find(iter, MESSAGE_KEY_img_chunk_size);
-		    int chunk_size = chunk_size_t->value->int32;
+			Tuple *chunk_size_t = dict_find(iter, MESSAGE_KEY_img_chunk_size);
+			uint32_t chunk_size = chunk_size_t->value->uint32;
 
-		    data_detail_img_index = data_detail_img_index + chunk_size;
+			data_detail_img_index = data_detail_img_index + chunk_size;
 
-		    Tuple *index_t = dict_find(iter, MESSAGE_KEY_img_chunk_index);
-		    int index = index_t->value->int32;
+			Tuple *index_t = dict_find(iter, MESSAGE_KEY_img_chunk_index);
+			uint32_t index = index_t->value->uint32;
 
-		    // Save the chunk
-		    memcpy(&data_detail->img_data[index], chunk_data, chunk_size);
+			// Save the chunk
+			memcpy(&data_detail->img_data[index], chunk_data, chunk_size);
+			APP_LOG(APP_LOG_LEVEL_ERROR, "received img index:%lu,size:%lu",index,chunk_size);
 		}
 
 		DataItem* data_item = received_item(iter);
@@ -208,7 +208,7 @@ static void received_detail(DictionaryIterator *iter){
 			data_source_free_detail(s_data_detail);
 			s_data_detail = data_detail;
 		}
-  	}
+	}
 }
 
 static char* dict_find_str(DictionaryIterator *iter,const uint32_t key){
@@ -249,7 +249,7 @@ static DataItem* received_item(DictionaryIterator *iter){
 		DataItem* data_item = (DataItem*)malloc(sizeof(DataItem));
 		data_item->code = code;
 		data_item->name	= dict_find_str(iter,MESSAGE_KEY_item_name);
-  		data_item->value = dict_find_str(iter,MESSAGE_KEY_item_value);
+  	data_item->value = dict_find_str(iter,MESSAGE_KEY_item_value);
 		data_item->point = dict_find_str(iter,MESSAGE_KEY_item_point);
 		data_item->rate	= dict_find_str(iter,MESSAGE_KEY_item_rate);		//涨跌率(%)
 		data_item->volume = dict_find_str(iter,MESSAGE_KEY_item_volume);;	//成交量

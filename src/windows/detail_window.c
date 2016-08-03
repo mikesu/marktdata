@@ -44,8 +44,9 @@ void detail_window_show(DataDetail* data_detail) {
   }
 
   // Create new GBitmap from downloaded PNG data
+	
   s_bitmap = gbitmap_create_from_png_data(data_detail->img_data, data_detail->img_size);
-
+	
   if(s_bitmap) {
     bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap);
   } else {

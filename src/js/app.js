@@ -17,15 +17,12 @@ Pebble.addEventListener('appmessage',
   function(e) {
     var dict = e.payload;
   	console.log('Got message: ' + JSON.stringify(dict));
-  	if(dict['action']) {
-  		var action = dict['action'];
-      if("get_list" == action){
-        var codes = dict['data'];
-        queryList(codes);
-      }else if("get_detail" == action){
-        var code = dict['data'];
-        queryDetail(code);
-      }else if("init" == action){
+  	if(dict.action) {
+      if("get_list" == dict.action){
+        queryList(dict.data);
+      }else if("get_detail" == dict.action){
+        queryDetail(dict.data);
+      }else if("init" == dict.action){
         Pebble.sendAppMessage({"init":"js reday"}, 
           function(e) {
             console.log('sent c reday');
@@ -38,7 +35,7 @@ Pebble.addEventListener('appmessage',
   }                     
 );
 
-var MAX_CHUNK_SIZE = 8000;  // From app_message_inbox_size_maximum()
+var MAX_CHUNK_SIZE = 4000;  // From app_message_inbox_size_maximum()
 
 function queryList(codes){
   var items = queryItems(codes);
@@ -55,7 +52,7 @@ function sendItem(items,index){
     function(e) {
       console.log('Success to sent items with index!' + index);
       if(index+1<items.length){
-        sendItems(items,index+1);
+        sendItem(items,index+1);
       }
     },function(e) {
       console.log('Failed to send items with index!' + index);
@@ -125,7 +122,7 @@ function queryItems(codes){
   if(request.status==200){
     var items = [];
     var lines = request.response.split("\n");
-    for(var i = 0; i < lines.length; i++) {
+    for(i = 0; i < lines.length; i++) {
       var line = lines[i];
       if(line.length>3){
         var itemStr = line.slice(line.indexOf("\"")+1,line.lastIndexOf("\""));
