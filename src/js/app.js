@@ -36,10 +36,12 @@ Pebble.addEventListener('appmessage',
 );
 
 var MAX_CHUNK_SIZE = 4000;  // From app_message_inbox_size_maximum()
+var MAX_TRY = 3;
 
 function queryList(codes){
-  var items = queryItems(codes);
-  sendItem(items,0);
+  queryItems(codes,function(items){
+    sendItem(items,0);
+  });
 }
 
 function sendItem(items,index){
@@ -61,9 +63,11 @@ function sendItem(items,index){
 }
 
 function queryDetail(code){
-  var items = queryItems(code);
-  var image = downloadImage(code);
-  sendDetail(items[0],image,0);
+  queryItems(code,function(items){
+    downloadImage(code,function(image){
+      sendDetail(items[0],image,0);
+    })
+  });
 }
 
 function sendDetail(item,image,index){
@@ -106,7 +110,7 @@ function sendDetail(item,image,index){
 }
 
 
-function queryItems(codes){
+function queryItems(codes,callback){
   var codesArray = codes.split(",");
   var codesForQuery = "";
   for (var i = 0; i < codesArray.length; i++) {
@@ -117,48 +121,65 @@ function queryItems(codes){
   }
   var queryUrl = "http://hq.sinajs.cn/list="+codesForQuery;
   var request = new XMLHttpRequest();
-  request.open("GET", queryUrl,false);
-  request.send();
-  if(request.status==200){
-    var items = [];
-    var lines = request.response.split("\n");
-    for(i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      if(line.length>3){
-        var itemStr = line.slice(line.indexOf("\"")+1,line.lastIndexOf("\""));
-        var itemProperties = itemStr.split(",");
-        var item = {};
-        item.item_code = codesArray[i];
-        item.item_name = itemProperties[0];
-        item.item_value = itemProperties[1];
-        item.item_point = itemProperties[2];
-        item.item_rate = itemProperties[3]+"%";
-        item.item_volume = itemProperties[4];
-        item.item_turnover = itemProperties[5];
-        items.push(item);
+  request.open("GET", queryUrl,true);
+  request.onload = function(e) {
+    console.log("queryItems onload");
+    var result = request.response;
+    if(request.status==200&&result!=null&&result.length>0){
+      var items = [];
+      var lines = result.split("\n");
+      for(i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if(line.length>3){
+          var itemStr = line.slice(line.indexOf("\"")+1,line.lastIndexOf("\""));
+          var itemProperties = itemStr.split(",");
+          var item = {};
+          item.item_code = codesArray[i];
+          item.item_name = itemProperties[0];
+          item.item_value = itemProperties[1];
+          item.item_point = itemProperties[2];
+          item.item_rate = itemProperties[3]+"%";
+          item.item_volume = itemProperties[4];
+          item.item_turnover = itemProperties[5];
+          items.push(item);
+        }
       }
-    }
-    return items;
-  }else{
-    return null;
-  } 
+      callback(items);
+    }else{
+       console.log('queryItems:' + codes +" Failed !");
+    } 
+  }
+  request.onerror = function(e) {
+      console.log("queryItems Error " + e);
+  }
+  request.send(null);
 }
 
-function downloadImage(code) {
+function downloadImage(code,callback) {
   var imgUrl = "http://image.sinajs.cn/newchart/wap/cn_min_other/min_wap/"+code+".png";
   var request = new XMLHttpRequest();
   request.responseType = "arraybuffer";
-  request.open("GET", imgUrl,false);
-  request.send();
-  if(request.status==200){
-    var byteArray = new Uint8Array(request.response);
-    var array = [];
-    for(var i = 0; i < byteArray.byteLength; i++) {
-      array.push(byteArray[i]);
+  request.open("GET", imgUrl,true);
+  request.onload = function(e) {
+    console.log("downloadImage onload");
+    var buf = request.response;
+    if(request.status == 200 && buf) {
+        var byteArray = new Uint8Array(buf);
+        var arr = [];
+        for(var i=0; i<byteArray.byteLength; i++) {
+            arr.push(byteArray[i]);
+        }
+
+        console.log("Downloaded file with " + byteArray.length + " bytes.");
+        callback(arr);
     }
-    return array;
-  }else{
-    return null;
+    else {
+      errorCallback("Request status is " + request.status);
+    }
   }
+  request.onerror = function(e) {
+      console.log("downloadImage Error " + e);
+  }
+  request.send(null);
 }
 
